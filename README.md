@@ -15,4 +15,4 @@ To install it simply drag n drop the dll file inside your Call of Duty 4 root fo
 - Extra fast value update
 - Lightweight
 - Hijacked d3d9.dll: no injector and no extra tools needed
-- Max velocity (Resettable by pressing Numpad0)
+- Keeps track of the max velocity (Resettable by pressing Numpad0)

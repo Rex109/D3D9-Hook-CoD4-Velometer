@@ -1,6 +1,6 @@
 # Call of Duty 4 - D3D9 Hook Velometer
 
-A Call of Duty 4 DLL to calculate the player's velocity using DirectX 9 hooking to draw the UI on the screen with absolutely no performance impact.
+A Call of Duty 4 dll to calculate the player's velocity using DirectX 9 hooking to draw the UI on the screen with absolutely no performance impact.
 
 ![Preview](https://i.imgur.com/ZhEoDhZ.jpg)
 

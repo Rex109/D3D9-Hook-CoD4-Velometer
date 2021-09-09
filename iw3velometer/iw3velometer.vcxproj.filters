@@ -24,6 +24,9 @@
     <ClInclude Include="detours.h">
       <Filter>File di origine</Filter>
     </ClInclude>
+    <ClInclude Include="SimpleIni.h">
+      <Filter>File di origine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">

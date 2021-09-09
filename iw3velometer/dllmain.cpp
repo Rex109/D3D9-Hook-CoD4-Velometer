@@ -6,6 +6,9 @@
 #include <d3d9.h>
 #include <d3dx9.h>
 
+#include "simpleini.h"
+#include <string.h>
+
 #pragma comment(lib, "d3d9.lib")
 #pragma comment(lib, "d3dx9.lib")
 
@@ -30,17 +33,37 @@ RECT screenrect;
 
 LPD3DXFONT font;
 
+bool showMaxVelocity = true;
+int fontSize = 60;
+float maxVelocityX = 0;
+float maxVelocityY = -110;
+float velocityX = 0;
+float velocityY = -50;
+
+int maxVelocityAlpha = 255;
+int maxVelocityR = 255;
+int maxVelocityG = 128;
+int maxVelocityB = 128;
+
+int velocityAlpha = 255;
+int velocityR = 255;
+int velocityG = 255;
+int velocityB = 255;
+
 int maxvel = 0;
+
+bool showHud = true;
+bool resetDown = false;
 
 HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
     pDevice->GetCreationParameters(&cparams);
     GetWindowRect(cparams.hFocusWindow, &screenrect);
 
-    RECT veloRectangle = { 0, 0, screenrect.right - screenrect.left, screenrect.bottom - screenrect.top - 50 };
-    RECT maxRectangle = { 0, 0, screenrect.right - screenrect.left, screenrect.bottom - screenrect.top - 110 };
+    RECT veloRectangle = { 0, 0, screenrect.right - screenrect.left + velocityX, screenrect.bottom - screenrect.top + velocityY };
+    RECT maxRectangle = { 0, 0, screenrect.right - screenrect.left + maxVelocityX, screenrect.bottom - screenrect.top + maxVelocityY };
 
     if (!font)
-        D3DXCreateFont(pDevice, 60, 0, FW_REGULAR, 1, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial", &font);
+        D3DXCreateFont(pDevice, fontSize, 0, FW_REGULAR, 1, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial", &font);
 
     float x, y;
     ReadProcessMemory(process, reinterpret_cast<PVOID>(0x79449C), &x, sizeof(x), nullptr);
@@ -53,15 +76,27 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
     str.str(std::string());
     str << "(" << maxvel << ")";
 
-    font->DrawText(NULL, str.str().c_str(), -1, &maxRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB(255, 255, 128, 128));
+    if(showMaxVelocity && showHud)
+        font->DrawText(NULL, str.str().c_str(), -1, &maxRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB(maxVelocityAlpha, maxVelocityR, maxVelocityG, maxVelocityB));
 
     str.str(std::string());
     str << vel;
 
-    font->DrawText(NULL, str.str().c_str(), -1, &veloRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB(255, 255, 255, 255));
+    if (showHud)
+        font->DrawText(NULL, str.str().c_str(), -1, &veloRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB(velocityAlpha, velocityR, velocityG, velocityB));
 
     if (GetAsyncKeyState(VK_NUMPAD0))
         maxvel = 0;
+
+    bool key = GetAsyncKeyState(VK_NUMPAD1);
+
+    if (key && !resetDown)
+    {
+        showHud = !showHud;
+        resetDown = true;
+    }
+    else if(key == 0)
+        resetDown = false;
 
     return pEndScene(pDevice);
 }
@@ -78,8 +113,6 @@ HRESULT __stdcall hookedResetScene(IDirect3DDevice9* pDevice, D3DPRESENT_PARAMET
 }
 
 void initHooks() {
-    process = GetCurrentProcess();
-
     IDirect3D9* pD3D = Direct3DCreate9(D3D_SDK_VERSION);
     if (!pD3D)
         return;
@@ -106,6 +139,56 @@ void initHooks() {
     pD3D->Release();
 }
 
+bool initConfig()
+{
+    CSimpleIniA ini;
+    ini.SetUnicode();
+
+    SI_Error rc = ini.LoadFile("iw3velometer.ini");
+    if (rc < 0)
+        return false;
+    
+    const char* pv;
+
+    pv = ini.GetValue("Config", "showMaxVelocity", "True");
+    if (strcmp(pv, "False") == 0 )
+        showMaxVelocity = false;
+
+    pv = ini.GetValue("Config", "fontSize", "60");
+    fontSize = (int)std::stof(pv);
+
+    pv = ini.GetValue("Config", "maxVelocityX", "0");
+    maxVelocityX = std::stof(pv);
+    pv = ini.GetValue("Config", "maxVelocityY", "-110");
+    maxVelocityY = std::stof(pv);
+
+    pv = ini.GetValue("Config", "VelocityY", "0");
+    velocityY = std::stof(pv);
+    pv = ini.GetValue("Config", "VelocityX", "-50");
+    velocityX = std::stof(pv);
+
+    pv = ini.GetValue("Config", "maxVelocityAlpha", "255");
+    maxVelocityAlpha = (int)std::stof(pv);
+    pv = ini.GetValue("Config", "maxVelocityR", "255");
+    maxVelocityR = (int)std::stof(pv);
+    pv = ini.GetValue("Config", "maxVelocityG", "128");
+    maxVelocityG = (int)std::stof(pv);
+    pv = ini.GetValue("Config", "maxVelocityB", "128");
+    maxVelocityB = (int)std::stof(pv);
+
+    pv = ini.GetValue("Config", "velocityAlpha", "255");
+    velocityAlpha = (int)std::stof(pv);
+    pv = ini.GetValue("Config", "velocityR", "255");
+    velocityR = (int)std::stof(pv);
+    pv = ini.GetValue("Config", "velocityG", "128");
+    velocityG = (int)std::stof(pv);
+    pv = ini.GetValue("Config", "velocityB", "128");
+    velocityB = (int)std::stof(pv);
+
+
+    return true;
+}
+
 bool InitializeD3D9()
 {
     TCHAR szDllPath[MAX_PATH] = { 0 };
@@ -128,13 +211,24 @@ bool InitializeD3D9()
     }
 }
 
+DWORD WINAPI Loop() {
+    process = GetCurrentProcess();
+
+    if(initConfig())
+        initHooks();
+    else
+        MessageBox(NULL, "Can't load config, IW3Velometer has been disabled.", "IW3Velometer", MB_OK | MB_ICONERROR );
+
+    return 0;
+}
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
 {
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH:
         InitializeD3D9();
-        CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)initHooks, NULL, 0, NULL);
+        CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)Loop, NULL, 0, NULL);
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
     case DLL_PROCESS_DETACH:

@@ -24,7 +24,7 @@ resetScene pResetScene;
 typedef IDirect3D9* (WINAPI* FND3DC9)(UINT);
 FND3DC9 Direct3DCreate9_out;
 
-std::ostringstream str;
+std::stringstream str;
 
 HANDLE process;
 
@@ -40,15 +40,18 @@ float maxVelocityY = -110;
 float velocityX = 0;
 float velocityY = -50;
 
-int maxVelocityAlpha = 255;
-int maxVelocityR = 255;
-int maxVelocityG = 128;
-int maxVelocityB = 128;
+unsigned char maxVelocityAlpha = 255;
+unsigned char maxVelocityR = 255;
+unsigned char maxVelocityG = 128;
+unsigned char maxVelocityB = 128;
 
-int velocityAlpha = 255;
-int velocityR = 255;
-int velocityG = 255;
-int velocityB = 255;
+unsigned char velocityAlpha = 255;
+unsigned char velocityR = 255;
+unsigned char velocityG = 255;
+unsigned char velocityB = 255;
+
+int toggleKey = 0x60;
+int resetKey = 0x61;
 
 int maxvel = 0;
 
@@ -85,10 +88,10 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
     if (showHud)
         font->DrawText(NULL, str.str().c_str(), -1, &veloRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB(velocityAlpha, velocityR, velocityG, velocityB));
 
-    if (GetAsyncKeyState(VK_NUMPAD0))
+    if (GetAsyncKeyState(resetKey))
         maxvel = 0;
 
-    bool key = GetAsyncKeyState(VK_NUMPAD1);
+    bool key = GetAsyncKeyState(toggleKey);
 
     if (key && !resetDown)
     {
@@ -168,23 +171,27 @@ bool initConfig()
     velocityX = std::stof(pv);
 
     pv = ini.GetValue("Config", "maxVelocityAlpha", "255");
-    maxVelocityAlpha = (int)std::stof(pv);
+    maxVelocityAlpha = std::stof(pv);
     pv = ini.GetValue("Config", "maxVelocityR", "255");
-    maxVelocityR = (int)std::stof(pv);
+    maxVelocityR = std::stof(pv);
     pv = ini.GetValue("Config", "maxVelocityG", "128");
-    maxVelocityG = (int)std::stof(pv);
+    maxVelocityG = std::stof(pv);
     pv = ini.GetValue("Config", "maxVelocityB", "128");
-    maxVelocityB = (int)std::stof(pv);
+    maxVelocityB = std::stof(pv);
 
     pv = ini.GetValue("Config", "velocityAlpha", "255");
-    velocityAlpha = (int)std::stof(pv);
+    velocityAlpha = std::stof(pv);
     pv = ini.GetValue("Config", "velocityR", "255");
-    velocityR = (int)std::stof(pv);
+    velocityR = std::stof(pv);
     pv = ini.GetValue("Config", "velocityG", "128");
-    velocityG = (int)std::stof(pv);
+    velocityG = std::stof(pv);
     pv = ini.GetValue("Config", "velocityB", "128");
-    velocityB = (int)std::stof(pv);
+    velocityB = std::stof(pv);
 
+    pv = ini.GetValue("Config", "toggleKey", "0x60");
+    toggleKey = std::stoi(pv, nullptr, 16);
+    pv = ini.GetValue("Config", "resetKey", "0x61");
+    resetKey = std::stoi(pv, nullptr, 16);
 
     return true;
 }
@@ -211,7 +218,7 @@ bool InitializeD3D9()
     }
 }
 
-DWORD WINAPI Loop() {
+DWORD WINAPI init() {
     process = GetCurrentProcess();
 
     if(initConfig())
@@ -228,7 +235,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
     {
     case DLL_PROCESS_ATTACH:
         InitializeD3D9();
-        CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)Loop, NULL, 0, NULL);
+        CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)init, NULL, 0, NULL);
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
     case DLL_PROCESS_DETACH:

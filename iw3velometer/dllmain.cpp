@@ -188,9 +188,9 @@ bool initConfig()
     pv = ini.GetValue("Config", "velocityB", "128");
     velocityB = std::stof(pv);
 
-    pv = ini.GetValue("Config", "toggleKey", "0x60");
+    pv = ini.GetValue("Config", "toggleKey", "0x61");
     toggleKey = std::stoi(pv, nullptr, 16);
-    pv = ini.GetValue("Config", "resetKey", "0x61");
+    pv = ini.GetValue("Config", "resetKey", "0x60");
     resetKey = std::stoi(pv, nullptr, 16);
 
     return true;

@@ -13,8 +13,8 @@ To install it simply drag n drop the dll and the ini file inside your Call of Du
 # Features
 - No performance loss
 - Fully customizable
-- Hide/unhide with Numpad1
+- Hide/unhide with Numpad1 (customizable through ini)
 - Extra fast value update
 - Lightweight
 - Hijacked d3d9.dll: no injector and no extra tools needed
-- Keeps track of the max velocity (Resettable by pressing Numpad0)
+- Keeps track of the max velocity (Resettable by pressing Numpad0 (also customizable through ini))

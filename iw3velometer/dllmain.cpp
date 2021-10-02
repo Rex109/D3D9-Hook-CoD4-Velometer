@@ -28,6 +28,8 @@ std::stringstream str;
 
 HANDLE process;
 
+std::string DLLPath;
+
 D3DDEVICE_CREATION_PARAMETERS cparams;
 RECT screenrect;
 
@@ -149,7 +151,12 @@ bool initConfig()
     CSimpleIniA ini;
     ini.SetUnicode();
 
-    SI_Error rc = ini.LoadFile("iw3velometer.ini");
+    TCHAR Path[MAX_PATH] = { 0 };
+    GetModuleFileName(NULL, Path, MAX_PATH);
+    std::wstring::size_type pos = std::string(Path).find_last_of("\\/");
+    DLLPath = std::string(Path).substr(0, pos).append("\\iw3velometer.ini");
+
+    SI_Error rc = ini.LoadFile(DLLPath.c_str());
     if (rc < 0)
         return false;
     

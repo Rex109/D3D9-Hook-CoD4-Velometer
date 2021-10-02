@@ -50,6 +50,8 @@ unsigned char velocityR = 255;
 unsigned char velocityG = 255;
 unsigned char velocityB = 255;
 
+std::string selectedFont = "Arial";
+
 int toggleKey = 0x60;
 int resetKey = 0x61;
 
@@ -66,7 +68,7 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
     RECT maxRectangle = { 0, 0, screenrect.right - screenrect.left + maxVelocityX, screenrect.bottom - screenrect.top + maxVelocityY };
 
     if (!font)
-        D3DXCreateFont(pDevice, fontSize, 0, FW_REGULAR, 1, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, "Arial", &font);
+        D3DXCreateFont(pDevice, fontSize, 0, FW_REGULAR, 1, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, selectedFont.c_str(), &font);
 
     float x, y;
     ReadProcessMemory(process, reinterpret_cast<PVOID>(0x79449C), &x, sizeof(x), nullptr);
@@ -158,7 +160,9 @@ bool initConfig()
         showMaxVelocity = false;
 
     pv = ini.GetValue("Config", "fontSize", "60");
-    fontSize = (int)std::stof(pv);
+    fontSize = std::stoi(pv);
+    pv = ini.GetValue("Config", "font", "Arial");
+    selectedFont = pv;
 
     pv = ini.GetValue("Config", "maxVelocityX", "0");
     maxVelocityX = std::stof(pv);

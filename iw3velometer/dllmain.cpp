@@ -57,10 +57,14 @@ std::string selectedFont = "Arial";
 int toggleKey = 0x60;
 int resetKey = 0x61;
 
+bool resetOnDeath = true;
+
 int maxvel = 0;
 
 bool showHud = true;
 bool resetDown = false;
+
+bool isDead = false;
 
 HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
     pDevice->GetCreationParameters(&cparams);
@@ -92,8 +96,14 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
     if (showHud)
         font->DrawText(NULL, str.str().c_str(), -1, &veloRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB(velocityAlpha, velocityR, velocityG, velocityB));
 
-    if (GetAsyncKeyState(resetKey))
+    bool isDeadRead;
+    ReadProcessMemory(process, reinterpret_cast<PVOID>(0x74F300), &isDeadRead, sizeof(isDeadRead), nullptr);
+
+    if (GetAsyncKeyState(resetKey) || (resetOnDeath && isDead != isDeadRead))
+    {
         maxvel = 0;
+        isDead = isDeadRead;
+    }
 
     bool key = GetAsyncKeyState(toggleKey);
 
@@ -203,6 +213,10 @@ bool initConfig()
     toggleKey = std::stoi(pv, nullptr, 16);
     pv = ini.GetValue("Config", "resetKey", "0x60");
     resetKey = std::stoi(pv, nullptr, 16);
+
+    pv = ini.GetValue("Config", "resetonDeath", "True");
+    if (strcmp(pv, "False") == 0)
+        resetOnDeath = false;
 
     return true;
 }

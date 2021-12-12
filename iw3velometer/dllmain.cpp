@@ -64,7 +64,7 @@ int maxvel = 0;
 bool showHud = true;
 bool resetDown = false;
 
-bool isDead = false;
+bool isAlive = false;
 
 HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
     pDevice->GetCreationParameters(&cparams);
@@ -96,13 +96,13 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
     if (showHud)
         font->DrawText(NULL, str.str().c_str(), -1, &veloRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB(velocityAlpha, velocityR, velocityG, velocityB));
 
-    bool isDeadRead;
-    ReadProcessMemory(process, reinterpret_cast<PVOID>(0x74F300), &isDeadRead, sizeof(isDeadRead), nullptr);
+    bool isAliveRead;
+    ReadProcessMemory(process, reinterpret_cast<PVOID>(0x8C9CD7), &isAliveRead, sizeof(isAliveRead), nullptr);
 
-    if (GetAsyncKeyState(resetKey) || (resetOnDeath && isDead != isDeadRead))
+    if (GetAsyncKeyState(resetKey) || (resetOnDeath && isAlive != isAliveRead))
     {
         maxvel = 0;
-        isDead = isDeadRead;
+        isAlive = isAliveRead;
     }
 
     bool key = GetAsyncKeyState(toggleKey);

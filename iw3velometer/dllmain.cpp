@@ -35,6 +35,8 @@ RECT screenrect;
 
 LPD3DXFONT font;
 
+TCHAR appName[MAX_PATH];
+
 bool showMaxVelocity = true;
 int fontSize = 60;
 float maxVelocityX = 0;
@@ -76,9 +78,23 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
     if (!font)
         D3DXCreateFont(pDevice, fontSize, 0, FW_REGULAR, 1, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, selectedFont.c_str(), &font);
 
+    bool isAliveRead;
     float x, y;
-    ReadProcessMemory(process, reinterpret_cast<PVOID>(0x79449C), &x, sizeof(x), nullptr);
-    ReadProcessMemory(process, reinterpret_cast<PVOID>(0x7944A0), &y, sizeof(y), nullptr);
+    if (strstr(appName, "iw3mp.exe"))
+    {
+        ReadProcessMemory(process, reinterpret_cast<PVOID>(0x79449C), &x, sizeof(x), nullptr);
+        ReadProcessMemory(process, reinterpret_cast<PVOID>(0x7944A0), &y, sizeof(y), nullptr);
+
+        ReadProcessMemory(process, reinterpret_cast<PVOID>(0x8C9CD7), &isAliveRead, sizeof(isAliveRead), nullptr);
+    }
+    else
+    {
+        ReadProcessMemory(process, reinterpret_cast<PVOID>(0x714BD0), &x, sizeof(x), nullptr);
+        ReadProcessMemory(process, reinterpret_cast<PVOID>(0x714BD4), &y, sizeof(y), nullptr);
+
+        ReadProcessMemory(process, reinterpret_cast<PVOID>(0xC8149D), &isAliveRead, sizeof(isAliveRead), nullptr);
+    }
+
     int vel = (int)sqrt((x * x) + (y * y));
 
     if (vel > maxvel)
@@ -95,9 +111,6 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
 
     if (showHud)
         font->DrawText(NULL, str.str().c_str(), -1, &veloRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB(velocityAlpha, velocityR, velocityG, velocityB));
-
-    bool isAliveRead;
-    ReadProcessMemory(process, reinterpret_cast<PVOID>(0x8C9CD7), &isAliveRead, sizeof(isAliveRead), nullptr);
 
     if (GetAsyncKeyState(resetKey) || (resetOnDeath && isAlive != isAliveRead))
     {
@@ -259,6 +272,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH:
+        GetModuleFileName(NULL, appName, MAX_PATH);
+
+        if (strstr(appName, "iw3mp.exe") == NULL && strstr(appName, "iw3sp.exe") == NULL)
+            break;
+
         InitializeD3D9();
         CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)init, NULL, 0, NULL);
     case DLL_THREAD_ATTACH:

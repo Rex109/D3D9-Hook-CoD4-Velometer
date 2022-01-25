@@ -7,7 +7,7 @@ A Call of Duty 4 dll that calculates the player's velocity using DirectX 9 hooki
 # Download and installation
 To download the pre-compiled dll you can grab the latest version in the [Releases Page](https://github.com/Rex109/D3D9-Hook-CoD4-Velometer/releases)
 
-To install it simply drag n drop the dll and the ini file inside your Call of Duty 4 root folder (in the same folder as iw3mp.exe), and simply run the game, no extra tools needed!
+To install it simply drag n drop the dll and the ini file inside your Call of Duty 4 root folder (in the same folder as iw3mp.exe/iw3sp.exe), and simply run the game, no extra tools needed!
 
 
 # Features

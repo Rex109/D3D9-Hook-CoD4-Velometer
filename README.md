@@ -19,4 +19,4 @@ To install it simply drag n drop the dll and the ini file inside your Call of Du
 - Hijacked d3d9.dll: no injector and no extra tools needed
 - Keeps track of the max velocity (Resettable by pressing Numpad0 (also customizable through ini))
 - On death max velocity value reset
-- Support singleplayer
+- Support both multiplayer and singleplayer

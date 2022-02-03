@@ -275,7 +275,10 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
         GetModuleFileName(NULL, appName, MAX_PATH);
 
         if (strstr(appName, "iw3mp.exe") == NULL && strstr(appName, "iw3sp.exe") == NULL)
+        {
+            MessageBox(NULL, "IW3Velometer cannot be loaded by this application", "IW3Velometer", MB_OK | MB_ICONERROR);
             break;
+        }
 
         InitializeD3D9();
         CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)init, NULL, 0, NULL);

@@ -12,7 +12,7 @@ To install it simply drag n drop the dll and the ini file inside your Call of Du
 
 # Features
 - No performance loss
-- In-game gui
+- In-game gui (Toggable by pressing M)
 - Fully customizable
 - Hide/unhide with Numpad1 (customizable through ini and in-game gui)
 - Extra fast value update

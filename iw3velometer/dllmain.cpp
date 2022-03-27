@@ -329,6 +329,12 @@ HRESULT __stdcall hookedResetScene(IDirect3DDevice9* pDevice, D3DPRESENT_PARAMET
         font = NULL;
     }
 
+    if (imguiinit)
+    {
+        ImGui_ImplDX9_Shutdown();
+        ImGui_ImplDX9_Init(pDevice);
+    }
+
     return pResetScene(pDevice, Param);
 }
 

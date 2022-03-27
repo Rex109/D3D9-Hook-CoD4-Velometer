@@ -153,7 +153,8 @@ LRESULT __stdcall MessageHandler(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lPar
         keyConfig = nullptr;
     }
 
-    ImGui_ImplWin32_WndProcHandler(hWnd, Msg, wParam, lParam);
+    if(showGui)
+        ImGui_ImplWin32_WndProcHandler(hWnd, Msg, wParam, lParam);
 
     return CallWindowProc(oWndProc, hWnd, Msg, wParam, lParam);
 }

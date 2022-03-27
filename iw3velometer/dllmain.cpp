@@ -59,7 +59,7 @@ struct iw3velometerConfig_s {
 
     int toggleKey = 0x60;
     int resetKey = 0x61;
-    int guiKey = 0x22;
+    int guiKey = 0x4D;
 
     bool resetOnDeath = true;
 };
@@ -420,7 +420,7 @@ bool getConfig()
     iw3velometerConfig.toggleKey = std::stoi(pv, nullptr, 16);
     pv = ini.GetValue("Config", "resetKey", "0x60");
     iw3velometerConfig.resetKey = std::stoi(pv, nullptr, 16);
-    pv = ini.GetValue("Config", "guiKey", "0x22");
+    pv = ini.GetValue("Config", "guiKey", "0x4D");
     iw3velometerConfig.guiKey = std::stoi(pv, nullptr, 16);
 
     pv = ini.GetValue("Config", "resetOnDeath", "True");

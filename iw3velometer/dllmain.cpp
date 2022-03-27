@@ -1,4 +1,7 @@
-#include "pch.h"
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_dx9.h"
+#include "imgui/imgui_impl_win32.h"
+#include "imgui/imgui_stdlib.h"
 
 #include <iostream>
 #include <sstream>
@@ -15,20 +18,22 @@
 #include "detours.h"
 #pragma comment(lib, "detours.lib")
 
+IMGUI_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 typedef HRESULT(__stdcall* endScene)(IDirect3DDevice9* pDevice);
 endScene pEndScene;
 
 typedef HRESULT(__stdcall* resetScene)(IDirect3DDevice9* pDevice, D3DPRESENT_PARAMETERS* Param);
 resetScene pResetScene;
 
+WNDPROC oWndProc;
+
 typedef IDirect3D9* (WINAPI* FND3DC9)(UINT);
 FND3DC9 Direct3DCreate9_out;
 
 std::stringstream str;
 
-HANDLE process;
-
-std::string DLLPath;
+std::string INIPath;
 
 D3DDEVICE_CREATION_PARAMETERS cparams;
 RECT screenrect;
@@ -37,65 +42,171 @@ LPD3DXFONT font;
 
 TCHAR appName[MAX_PATH];
 
-bool showMaxVelocity = true;
-int fontSize = 60;
-float maxVelocityX = 0;
-float maxVelocityY = -110;
-float velocityX = 0;
-float velocityY = -50;
+HWND gameWindow;
 
-unsigned char maxVelocityAlpha = 255;
-unsigned char maxVelocityR = 255;
-unsigned char maxVelocityG = 128;
-unsigned char maxVelocityB = 128;
+struct iw3velometerConfig_s {
 
-unsigned char velocityAlpha = 255;
-unsigned char velocityR = 255;
-unsigned char velocityG = 255;
-unsigned char velocityB = 255;
+    bool showMaxVelocity = true;
+    int fontSize = 60;
 
-std::string selectedFont = "Arial";
+    std::string selectedFont = "Arial";
 
-int toggleKey = 0x60;
-int resetKey = 0x61;
+    int maxVelocityPos[2] = { 0, -110 };
+    int velocityPos[2] = { 0, -50 };
 
-bool resetOnDeath = true;
+    float maxVelocityColor[4] = { 1.0f, 0.5f, 0.5f, 1.0f };
+    float velocityColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+    int toggleKey = 0x60;
+    int resetKey = 0x61;
+    int guiKey = 0x22;
+
+    bool resetOnDeath = true;
+};
+
+iw3velometerConfig_s iw3velometerConfig;
+
+int *keyConfig = nullptr;
+
+int prevFontSize = iw3velometerConfig.fontSize;
+std::string prevFont = iw3velometerConfig.selectedFont;
 
 int maxvel = 0;
 
+bool showGui = false;
 bool showHud = true;
-bool resetDown = false;
-
+bool HudDown = false;
+bool GuiDown = false;
 bool isAlive = false;
+bool imguiinit = false;
+
+bool setConfig()
+{
+    CSimpleIniA ini;
+    ini.SetUnicode();
+
+    SI_Error rc = ini.LoadFile(INIPath.c_str());
+    if (rc < 0)
+        return false;
+
+    char str[10];
+
+    ini.SetValue("Config", "showMaxVelocity", iw3velometerConfig.showMaxVelocity ? "True" : "False");
+
+    sprintf_s(str, "%d", iw3velometerConfig.fontSize);
+    ini.SetValue("Config", "fontSize", str);
+
+    sprintf_s(str, "%d", iw3velometerConfig.maxVelocityPos[0]);
+    ini.SetValue("Config", "maxVelocityX", str);
+    sprintf_s(str, "%d", iw3velometerConfig.maxVelocityPos[1]);
+    ini.SetValue("Config", "maxVelocityY", str);
+
+    sprintf_s(str, "%d", iw3velometerConfig.velocityPos[0]);
+    ini.SetValue("Config", "VelocityX", str);
+    sprintf_s(str, "%d", iw3velometerConfig.velocityPos[1]);
+    ini.SetValue("Config", "VelocityY", str);
+
+    sprintf_s(str, "%.1f", iw3velometerConfig.maxVelocityColor[3]);
+    ini.SetValue("Config", "maxVelocityAlpha", str);
+    sprintf_s(str, "%.1f", iw3velometerConfig.maxVelocityColor[0]);
+    ini.SetValue("Config", "maxVelocityR", str);
+    sprintf_s(str, "%.1f", iw3velometerConfig.maxVelocityColor[1]);
+    ini.SetValue("Config", "maxVelocityG", str);
+    sprintf_s(str, "%.1f", iw3velometerConfig.maxVelocityColor[2]);
+    ini.SetValue("Config", "maxVelocityB", str);
+
+    sprintf_s(str, "%.1f", iw3velometerConfig.velocityColor[3]);
+    ini.SetValue("Config", "velocityAlpha", str);
+    sprintf_s(str, "%.1f", iw3velometerConfig.velocityColor[0]);
+    ini.SetValue("Config", "velocityR", str);
+    sprintf_s(str, "%.1f", iw3velometerConfig.velocityColor[1]);
+    ini.SetValue("Config", "velocityG", str);
+    sprintf_s(str, "%.1f", iw3velometerConfig.velocityColor[2]);
+    ini.SetValue("Config", "velocityB", str);
+
+    sprintf_s(str, "0x%x", iw3velometerConfig.toggleKey);
+    ini.SetValue("Config", "toggleKey", str);
+
+    sprintf_s(str, "0x%x", iw3velometerConfig.resetKey);
+    ini.SetValue("Config", "resetKey", str);
+
+    sprintf_s(str, "0x%x", iw3velometerConfig.guiKey);
+    ini.SetValue("Config", "guiKey", str);
+
+    ini.SetValue("Config", "resetOnDeath", iw3velometerConfig.resetOnDeath ? "True" : "False");
+
+    ini.SaveFile(INIPath.c_str());
+
+    return true;
+}
+
+LRESULT __stdcall MessageHandler(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+{
+    if (Msg == WM_KEYDOWN && keyConfig != nullptr)
+    {
+        if (keyConfig == &iw3velometerConfig.toggleKey)
+            HudDown = true;
+        else if (keyConfig == &iw3velometerConfig.guiKey)
+            GuiDown = true;
+
+        *keyConfig = wParam;
+        keyConfig = nullptr;
+    }
+
+    ImGui_ImplWin32_WndProcHandler(hWnd, Msg, wParam, lParam);
+
+    return CallWindowProc(oWndProc, hWnd, Msg, wParam, lParam);
+}
 
 HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
     pDevice->GetCreationParameters(&cparams);
     GetWindowRect(cparams.hFocusWindow, &screenrect);
 
-    RECT veloRectangle = { 0, 0, screenrect.right - screenrect.left + velocityX, screenrect.bottom - screenrect.top + velocityY };
-    RECT maxRectangle = { 0, 0, screenrect.right - screenrect.left + maxVelocityX, screenrect.bottom - screenrect.top + maxVelocityY };
+    RECT veloRectangle = { 0, 0, screenrect.right - screenrect.left + iw3velometerConfig.velocityPos[0], screenrect.bottom - screenrect.top + iw3velometerConfig.velocityPos[1]};
+    RECT maxRectangle = { 0, 0, screenrect.right - screenrect.left + iw3velometerConfig.maxVelocityPos[0], screenrect.bottom - screenrect.top + iw3velometerConfig.maxVelocityPos[1] };
+
+    if (!imguiinit)
+    {
+        oWndProc = (WNDPROC)SetWindowLongPtr(GetForegroundWindow(), GWL_WNDPROC, (LONG_PTR)MessageHandler);
+        ImGui::CreateContext();
+        ImGui::GetIO().ConfigFlags = ImGuiConfigFlags_NoMouseCursorChange;
+        ImGui::StyleColorsDark();
+        ImGui_ImplWin32_Init(GetForegroundWindow());
+        ImGui_ImplDX9_Init(pDevice);
+        imguiinit = true;
+    }
+
+    if (font && (iw3velometerConfig.fontSize != prevFontSize || iw3velometerConfig.selectedFont != prevFont))
+    {
+        font->Release();
+        font = NULL;
+
+        prevFont = iw3velometerConfig.selectedFont;
+        prevFontSize = iw3velometerConfig.fontSize;
+    }
+
 
     if (!font)
-        D3DXCreateFont(pDevice, fontSize, 0, FW_REGULAR, 1, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, selectedFont.c_str(), &font);
+        D3DXCreateFont(pDevice, iw3velometerConfig.fontSize, 0, FW_REGULAR, 1, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, iw3velometerConfig.selectedFont.c_str(), &font);
+        
 
-    bool isAliveRead;
-    float x, y;
+    bool* isAliveRead{};
+    float* x{}, * y{};
+
     if (strstr(appName, "iw3mp.exe"))
     {
-        ReadProcessMemory(process, reinterpret_cast<PVOID>(0x79449C), &x, sizeof(x), nullptr);
-        ReadProcessMemory(process, reinterpret_cast<PVOID>(0x7944A0), &y, sizeof(y), nullptr);
-
-        ReadProcessMemory(process, reinterpret_cast<PVOID>(0x8C9CD7), &isAliveRead, sizeof(isAliveRead), nullptr);
+        x = reinterpret_cast<float*>(0x79449C);
+        y = reinterpret_cast<float*>(0x7944A0);
+        isAliveRead = reinterpret_cast<bool*>(0x8C9CD7);
     }
     else
     {
-        ReadProcessMemory(process, reinterpret_cast<PVOID>(0x714BD0), &x, sizeof(x), nullptr);
-        ReadProcessMemory(process, reinterpret_cast<PVOID>(0x714BD4), &y, sizeof(y), nullptr);
-
-        ReadProcessMemory(process, reinterpret_cast<PVOID>(0xC8149D), &isAliveRead, sizeof(isAliveRead), nullptr);
+        x = reinterpret_cast<float*>(0x714BD0);
+        y = reinterpret_cast<float*>(0x714BD4);
+        isAliveRead = reinterpret_cast<bool*>(0xC8149D);
     }
 
-    int vel = (int)sqrt((x * x) + (y * y));
+    int vel = (int)sqrt((*x * *x) + (*y * *y));
 
     if (vel > maxvel)
         maxvel = vel;
@@ -103,33 +214,112 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
     str.str(std::string());
     str << "(" << maxvel << ")";
 
-    if(showMaxVelocity && showHud)
-        font->DrawText(NULL, str.str().c_str(), -1, &maxRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB(maxVelocityAlpha, maxVelocityR, maxVelocityG, maxVelocityB));
+    if(iw3velometerConfig.showMaxVelocity && showHud)
+        font->DrawText(NULL, str.str().c_str(), -1, &maxRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB((int)(255 * iw3velometerConfig.maxVelocityColor[3]), (int)(255 * iw3velometerConfig.maxVelocityColor[0]), (int)(255 * iw3velometerConfig.maxVelocityColor[1]), (int)(255 * iw3velometerConfig.maxVelocityColor[2])));
 
     str.str(std::string());
     str << vel;
 
     if (showHud)
-        font->DrawText(NULL, str.str().c_str(), -1, &veloRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB(velocityAlpha, velocityR, velocityG, velocityB));
+        font->DrawText(NULL, str.str().c_str(), -1, &veloRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB((int)(255 * iw3velometerConfig.velocityColor[3]), (int)(255 * iw3velometerConfig.velocityColor[0]), (int)(255 * iw3velometerConfig.velocityColor[1]), (int)(255 * iw3velometerConfig.velocityColor[2])));
 
-    if (GetAsyncKeyState(resetKey) || (resetOnDeath && isAlive != isAliveRead))
+    if (GetAsyncKeyState(iw3velometerConfig.resetKey) || (iw3velometerConfig.resetOnDeath && isAlive != *isAliveRead))
     {
         maxvel = 0;
-        isAlive = isAliveRead;
+        isAlive = *isAliveRead;
     }
 
-    bool key = GetAsyncKeyState(toggleKey);
+    bool key = GetAsyncKeyState(iw3velometerConfig.toggleKey);
 
-    if (key && !resetDown)
+    if (key && !HudDown)
     {
         showHud = !showHud;
-        resetDown = true;
+        HudDown = true;
     }
     else if(key == 0)
-        resetDown = false;
+        HudDown = false;
+
+    key = GetAsyncKeyState(iw3velometerConfig.guiKey);
+
+    if (key && !GuiDown)
+    {
+        showGui = !showGui;
+        ImGui::GetIO().MouseDrawCursor = showGui;
+        GuiDown = true;
+    }
+    else if (key == 0)
+        GuiDown = false;
+
+    
+    if (showGui)
+    {
+        ImGui_ImplDX9_NewFrame();
+        ImGui_ImplWin32_NewFrame();
+        ImGui::NewFrame();
+        ImGui::SetNextWindowSize(ImVec2(500, 500), ImGuiCond_FirstUseEver);
+        ImGui::Begin("IW3Velometer", &showGui);
+        ImGui::Checkbox("Show max velocity", &iw3velometerConfig.showMaxVelocity);
+        ImGui::DragInt("Font size", &iw3velometerConfig.fontSize);
+        ImGui::InputText("Font", &iw3velometerConfig.selectedFont);
+        ImGui::DragInt2("Max velocity position", iw3velometerConfig.maxVelocityPos);
+        ImGui::DragInt2("Velocity position", iw3velometerConfig.velocityPos);
+        ImGui::ColorEdit4("Max velocity color", iw3velometerConfig.maxVelocityColor);
+        ImGui::ColorEdit4("Velocity color", iw3velometerConfig.velocityColor);
+
+        char buffer[20];
+
+        if(keyConfig != &iw3velometerConfig.toggleKey)
+            sprintf_s(buffer, "0x%x", iw3velometerConfig.toggleKey);
+        else
+            sprintf_s(buffer, "Press any key");
+
+        if (ImGui::Button(buffer, ImVec2(150, 20)))
+            keyConfig = &iw3velometerConfig.toggleKey;
+            
+
+        ImGui::SameLine();
+        ImGui::Text("Toggle key");
+
+        if (keyConfig != &iw3velometerConfig.resetKey)
+            sprintf_s(buffer, "0x%x", iw3velometerConfig.resetKey);
+        else
+            sprintf_s(buffer, "Press any key");
+
+        if (ImGui::Button(buffer, ImVec2(150, 20)))
+            keyConfig = &iw3velometerConfig.resetKey;
+
+        ImGui::SameLine();
+        ImGui::Text("Reset key");
+
+        if (keyConfig != &iw3velometerConfig.guiKey)
+            sprintf_s(buffer, "0x%x", iw3velometerConfig.guiKey);
+        else
+            sprintf_s(buffer, "Press any key");
+
+        if (ImGui::Button(buffer, ImVec2(150, 20)))
+            keyConfig = &iw3velometerConfig.guiKey;
+
+        ImGui::SameLine();
+        ImGui::Text("Toggle gui key");
+
+        ImGui::Checkbox("Reset on death", &iw3velometerConfig.resetOnDeath);
+
+        ImGui::NewLine();
+        ImGui::NewLine();
+
+        if (ImGui::Button("Save configuration", ImVec2(150, 20)))
+            setConfig();
+
+        ImGui::End();
+
+        ImGui::EndFrame();
+        ImGui::Render();
+        ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
+    }
 
     return pEndScene(pDevice);
 }
+
 
 HRESULT __stdcall hookedResetScene(IDirect3DDevice9* pDevice, D3DPRESENT_PARAMETERS* Param) {
 
@@ -142,7 +332,8 @@ HRESULT __stdcall hookedResetScene(IDirect3DDevice9* pDevice, D3DPRESENT_PARAMET
     return pResetScene(pDevice, Param);
 }
 
-void initHooks() {
+void initHooks()
+{
     IDirect3D9* pD3D = Direct3DCreate9(D3D_SDK_VERSION);
     if (!pD3D)
         return;
@@ -160,6 +351,9 @@ void initHooks() {
         return;
     }
 
+    auto creationparams = D3DDEVICE_CREATION_PARAMETERS{ };
+    pDevice->GetCreationParameters(&creationparams);
+
     void** vTable = *reinterpret_cast<void***>(pDevice);
 
     pEndScene = (endScene)DetourFunction((PBYTE)vTable[42], (PBYTE)hookedEndScene);
@@ -169,7 +363,7 @@ void initHooks() {
     pD3D->Release();
 }
 
-bool initConfig()
+bool getConfig()
 {
     CSimpleIniA ini;
     ini.SetUnicode();
@@ -177,9 +371,9 @@ bool initConfig()
     TCHAR Path[MAX_PATH] = { 0 };
     GetModuleFileName(NULL, Path, MAX_PATH);
     std::wstring::size_type pos = std::string(Path).find_last_of("\\/");
-    DLLPath = std::string(Path).substr(0, pos).append("\\iw3velometer.ini");
+    INIPath = std::string(Path).substr(0, pos).append("\\iw3velometer.ini");
 
-    SI_Error rc = ini.LoadFile(DLLPath.c_str());
+    SI_Error rc = ini.LoadFile(INIPath.c_str());
     if (rc < 0)
         return false;
     
@@ -187,49 +381,51 @@ bool initConfig()
 
     pv = ini.GetValue("Config", "showMaxVelocity", "True");
     if (strcmp(pv, "False") == 0 )
-        showMaxVelocity = false;
+        iw3velometerConfig.showMaxVelocity = false;
 
     pv = ini.GetValue("Config", "fontSize", "60");
-    fontSize = std::stoi(pv);
+    iw3velometerConfig.fontSize = std::stoi(pv);
     pv = ini.GetValue("Config", "font", "Arial");
-    selectedFont = pv;
+    iw3velometerConfig.selectedFont = pv;
 
     pv = ini.GetValue("Config", "maxVelocityX", "0");
-    maxVelocityX = std::stof(pv);
+    iw3velometerConfig.maxVelocityPos[0] = std::stof(pv);
     pv = ini.GetValue("Config", "maxVelocityY", "-110");
-    maxVelocityY = std::stof(pv);
+    iw3velometerConfig.maxVelocityPos[1] = std::stof(pv);
 
-    pv = ini.GetValue("Config", "VelocityY", "0");
-    velocityY = std::stof(pv);
-    pv = ini.GetValue("Config", "VelocityX", "-50");
-    velocityX = std::stof(pv);
+    pv = ini.GetValue("Config", "VelocityX", "0");
+    iw3velometerConfig.velocityPos[0] = std::stof(pv);
+    pv = ini.GetValue("Config", "VelocityY", "-50");
+    iw3velometerConfig.velocityPos[1] = std::stof(pv);
 
-    pv = ini.GetValue("Config", "maxVelocityAlpha", "255");
-    maxVelocityAlpha = std::stof(pv);
-    pv = ini.GetValue("Config", "maxVelocityR", "255");
-    maxVelocityR = std::stof(pv);
-    pv = ini.GetValue("Config", "maxVelocityG", "128");
-    maxVelocityG = std::stof(pv);
-    pv = ini.GetValue("Config", "maxVelocityB", "128");
-    maxVelocityB = std::stof(pv);
+    pv = ini.GetValue("Config", "maxVelocityAlpha", "1.0");
+    iw3velometerConfig.maxVelocityColor[3] = std::stof(pv);
+    pv = ini.GetValue("Config", "maxVelocityR", "1.0");
+    iw3velometerConfig.maxVelocityColor[0] = std::stof(pv);
+    pv = ini.GetValue("Config", "maxVelocityG", "0.5");
+    iw3velometerConfig.maxVelocityColor[1] = std::stof(pv);
+    pv = ini.GetValue("Config", "maxVelocityB", "0.5");
+    iw3velometerConfig.maxVelocityColor[2] = std::stof(pv);
 
-    pv = ini.GetValue("Config", "velocityAlpha", "255");
-    velocityAlpha = std::stof(pv);
-    pv = ini.GetValue("Config", "velocityR", "255");
-    velocityR = std::stof(pv);
-    pv = ini.GetValue("Config", "velocityG", "128");
-    velocityG = std::stof(pv);
-    pv = ini.GetValue("Config", "velocityB", "128");
-    velocityB = std::stof(pv);
+    pv = ini.GetValue("Config", "velocityAlpha", "1.0");
+    iw3velometerConfig.velocityColor[3] = std::stof(pv);
+    pv = ini.GetValue("Config", "velocityR", "1.0");
+    iw3velometerConfig.velocityColor[0] = std::stof(pv);
+    pv = ini.GetValue("Config", "velocityG", "1.0");
+    iw3velometerConfig.velocityColor[1] = std::stof(pv);
+    pv = ini.GetValue("Config", "velocityB", "1.0");
+    iw3velometerConfig.velocityColor[2] = std::stof(pv);
 
     pv = ini.GetValue("Config", "toggleKey", "0x61");
-    toggleKey = std::stoi(pv, nullptr, 16);
+    iw3velometerConfig.toggleKey = std::stoi(pv, nullptr, 16);
     pv = ini.GetValue("Config", "resetKey", "0x60");
-    resetKey = std::stoi(pv, nullptr, 16);
+    iw3velometerConfig.resetKey = std::stoi(pv, nullptr, 16);
+    pv = ini.GetValue("Config", "guiKey", "0x22");
+    iw3velometerConfig.guiKey = std::stoi(pv, nullptr, 16);
 
-    pv = ini.GetValue("Config", "resetonDeath", "True");
+    pv = ini.GetValue("Config", "resetOnDeath", "True");
     if (strcmp(pv, "False") == 0)
-        resetOnDeath = false;
+        iw3velometerConfig.resetOnDeath = false;
 
     return true;
 }
@@ -257,9 +453,7 @@ bool InitializeD3D9()
 }
 
 DWORD WINAPI init() {
-    process = GetCurrentProcess();
-
-    if(initConfig())
+    if(getConfig())
         initHooks();
     else
         MessageBox(NULL, "Can't load config, IW3Velometer has been disabled.", "IW3Velometer", MB_OK | MB_ICONERROR );

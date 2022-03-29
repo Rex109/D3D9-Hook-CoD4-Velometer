@@ -42,8 +42,6 @@ LPD3DXFONT font;
 
 TCHAR appName[MAX_PATH];
 
-HWND gameWindow;
-
 struct iw3velometerConfig_s {
 
     bool showMaxVelocity = true;
@@ -142,7 +140,7 @@ bool setConfig()
 
 LRESULT __stdcall MessageHandler(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
-    if (Msg == WM_KEYDOWN && keyConfig != nullptr)
+    /*if (Msg == WM_KEYDOWN && keyConfig != nullptr)
     {
         if (keyConfig == &iw3velometerConfig.toggleKey)
             HudDown = true;
@@ -151,10 +149,10 @@ LRESULT __stdcall MessageHandler(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lPar
 
         *keyConfig = wParam;
         keyConfig = nullptr;
-    }
-
-    if(showGui)
-        ImGui_ImplWin32_WndProcHandler(hWnd, Msg, wParam, lParam);
+    }*/
+	
+    if (showGui && ImGui_ImplWin32_WndProcHandler(hWnd, Msg, wParam, lParam))
+        return true;
 
     return CallWindowProc(oWndProc, hWnd, Msg, wParam, lParam);
 }
@@ -169,6 +167,7 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
     if (!imguiinit)
     {
         oWndProc = (WNDPROC)SetWindowLongPtr(GetForegroundWindow(), GWL_WNDPROC, (LONG_PTR)MessageHandler);
+		
         ImGui::CreateContext();
         ImGui::GetIO().ConfigFlags = ImGuiConfigFlags_NoMouseCursorChange;
         ImGui::StyleColorsDark();
@@ -186,11 +185,9 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
         prevFontSize = iw3velometerConfig.fontSize;
     }
 
-
     if (!font)
         D3DXCreateFont(pDevice, iw3velometerConfig.fontSize, 0, FW_REGULAR, 1, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, iw3velometerConfig.selectedFont.c_str(), &font);
         
-
     bool* isAliveRead{};
     float* x{}, * y{};
 
@@ -250,7 +247,6 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
     }
     else if (key == 0)
         GuiDown = false;
-
     
     if (showGui)
     {
@@ -340,7 +336,7 @@ HRESULT __stdcall hookedResetScene(IDirect3DDevice9* pDevice, D3DPRESENT_PARAMET
 }
 
 void initHooks()
-{
+{   
     IDirect3D9* pD3D = Direct3DCreate9(D3D_SDK_VERSION);
     if (!pD3D)
         return;
@@ -396,14 +392,14 @@ bool getConfig()
     iw3velometerConfig.selectedFont = pv;
 
     pv = ini.GetValue("Config", "maxVelocityX", "0");
-    iw3velometerConfig.maxVelocityPos[0] = std::stof(pv);
+    iw3velometerConfig.maxVelocityPos[0] = std::stoi(pv);
     pv = ini.GetValue("Config", "maxVelocityY", "-110");
-    iw3velometerConfig.maxVelocityPos[1] = std::stof(pv);
+    iw3velometerConfig.maxVelocityPos[1] = std::stoi(pv);
 
     pv = ini.GetValue("Config", "VelocityX", "0");
-    iw3velometerConfig.velocityPos[0] = std::stof(pv);
+    iw3velometerConfig.velocityPos[0] = std::stoi(pv);
     pv = ini.GetValue("Config", "VelocityY", "-50");
-    iw3velometerConfig.velocityPos[1] = std::stof(pv);
+    iw3velometerConfig.velocityPos[1] = std::stoi(pv);
 
     pv = ini.GetValue("Config", "maxVelocityAlpha", "1.0");
     iw3velometerConfig.maxVelocityColor[3] = std::stof(pv);
@@ -437,7 +433,7 @@ bool getConfig()
     return true;
 }
 
-bool InitializeD3D9()
+void InitializeD3D9()
 {
     TCHAR szDllPath[MAX_PATH] = { 0 };
 
@@ -447,19 +443,15 @@ bool InitializeD3D9()
     HMODULE hDll = LoadLibrary(szDllPath);
 
     if (hDll == NULL)
-    {
-        return FALSE;
-    }
+        return;
 
     Direct3DCreate9_out = (FND3DC9)GetProcAddress(hDll, "Direct3DCreate9");
     if (Direct3DCreate9_out == NULL)
-    {
         FreeLibrary(hDll);
-        return FALSE;
-    }
 }
 
 DWORD WINAPI init() {
+
     if(getConfig())
         initHooks();
     else

@@ -50,9 +50,6 @@
     <ClCompile Include="..\include\imgui\imgui_impl_win32.cpp">
       <Filter>File di origine\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="..\include\imgui\imgui_tables.cpp">
-      <Filter>File di origine\imgui</Filter>
-    </ClCompile>
     <ClCompile Include="..\include\imgui\imgui_widgets.cpp">
       <Filter>File di origine\imgui</Filter>
     </ClCompile>

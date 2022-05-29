@@ -140,7 +140,7 @@ bool setConfig()
 
 LRESULT __stdcall MessageHandler(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
-    /*if (Msg == WM_KEYDOWN && keyConfig != nullptr)
+    if (Msg == WM_KEYDOWN && keyConfig != nullptr)
     {
         if (keyConfig == &iw3velometerConfig.toggleKey)
             HudDown = true;
@@ -149,7 +149,7 @@ LRESULT __stdcall MessageHandler(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lPar
 
         *keyConfig = wParam;
         keyConfig = nullptr;
-    }*/
+    }
 	
     if (showGui && ImGui_ImplWin32_WndProcHandler(hWnd, Msg, wParam, lParam))
         return true;

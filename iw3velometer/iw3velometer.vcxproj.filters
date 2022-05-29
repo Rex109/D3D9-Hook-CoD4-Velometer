@@ -59,6 +59,9 @@
     <ClCompile Include="..\include\imgui\imgui_stdlib.cpp">
       <Filter>File di origine\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="..\include\imgui\imgui_tables.cpp">
+      <Filter>File di origine\imgui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Source.def">

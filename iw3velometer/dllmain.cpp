@@ -54,8 +54,8 @@ struct iw3velometerConfig_s {
     int velocityPos[2] = { 0, -50 };
 
     float maxVelocityColor[4] = { 1.0f, 0.5f, 0.5f, 1.0f };
-    float velocityColor[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
-    float velocityLossColor[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
+    float velocityColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    float velocityLossColor[4] = { 1.0f, 0.0f, 1.0f, 1.0f };
 
     int toggleKey = 0x60;
     int resetKey = 0x61;

@@ -297,8 +297,8 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
         ImGui::DragInt2("Velocity position", iw3velometerConfig.velocityPos);
         ImGui::ColorEdit4("Max velocity color", iw3velometerConfig.maxVelocityColor);
         ImGui::ColorEdit4("Velocity color", iw3velometerConfig.velocityColor);
-        ImGui::ColorEdit4("Velocity Loss color", iw3velometerConfig.velocityLossColor);
-		ImGui::DragInt("Velocity Loss Delay", &iw3velometerConfig.loss_velocity);
+        ImGui::ColorEdit4("Velocity loss color", iw3velometerConfig.velocityLossColor);
+		ImGui::DragInt("Velocity loss delay", &iw3velometerConfig.loss_velocity);
 
         char buffer[20];
 

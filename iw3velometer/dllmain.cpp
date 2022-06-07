@@ -54,7 +54,7 @@ struct iw3velometerConfig_s {
     int velocityPos[2] = { 0, -50 };
 
     float maxVelocityColor[4] = { 1.0f, 0.5f, 0.5f, 1.0f };
-    float velocityColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    float velocityGainColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
     float velocityLossColor[4] = { 1.0f, 0.0f, 1.0f, 1.0f };
 
     int toggleKey = 0x60;
@@ -123,14 +123,14 @@ bool setConfig()
     sprintf_s(str, "%.1f", iw3velometerConfig.maxVelocityColor[2]);
     ini.SetValue("Config", "maxVelocityB", str);
 
-    sprintf_s(str, "%.1f", iw3velometerConfig.velocityColor[3]);
-    ini.SetValue("Config", "velocityAlpha", str);
-    sprintf_s(str, "%.1f", iw3velometerConfig.velocityColor[0]);
-    ini.SetValue("Config", "velocityR", str);
-    sprintf_s(str, "%.1f", iw3velometerConfig.velocityColor[1]);
-    ini.SetValue("Config", "velocityG", str);
-    sprintf_s(str, "%.1f", iw3velometerConfig.velocityColor[2]);
-    ini.SetValue("Config", "velocityB", str);
+    sprintf_s(str, "%.1f", iw3velometerConfig.velocityGainColor[3]);
+    ini.SetValue("Config", "velocityGainAlpha", str);
+    sprintf_s(str, "%.1f", iw3velometerConfig.velocityGainColor[0]);
+    ini.SetValue("Config", "velocityGainR", str);
+    sprintf_s(str, "%.1f", iw3velometerConfig.velocityGainColor[1]);
+    ini.SetValue("Config", "velocityGainG", str);
+    sprintf_s(str, "%.1f", iw3velometerConfig.velocityGainColor[2]);
+    ini.SetValue("Config", "velocityGainB", str);
 
     sprintf_s(str, "%.1f", iw3velometerConfig.velocityLossColor[3]);
     ini.SetValue("Config", "velocityLossAlpha", str);
@@ -252,7 +252,7 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
     str << vel;
 
     if (showHud && (accel ||(!accel && !iw3velometerConfig.velocityLossCheck)))
-	font->DrawText(NULL, str.str().c_str(), -1, &veloRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB((int)(255 * iw3velometerConfig.velocityColor[3]), (int)(255 * iw3velometerConfig.velocityColor[0]), (int)(255 * iw3velometerConfig.velocityColor[1]), (int)(255 * iw3velometerConfig.velocityColor[2])));
+	font->DrawText(NULL, str.str().c_str(), -1, &veloRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB((int)(255 * iw3velometerConfig.velocityGainColor[3]), (int)(255 * iw3velometerConfig.velocityGainColor[0]), (int)(255 * iw3velometerConfig.velocityGainColor[1]), (int)(255 * iw3velometerConfig.velocityGainColor[2])));
     else if (showHud && !accel && iw3velometerConfig.velocityLossCheck)
 	font->DrawText(NULL, str.str().c_str(), -1, &veloRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB((int)(255 * iw3velometerConfig.velocityLossColor[3]), (int)(255 * iw3velometerConfig.velocityLossColor[0]), (int)(255 * iw3velometerConfig.velocityLossColor[1]), (int)(255 * iw3velometerConfig.velocityLossColor[2])));
 
@@ -296,7 +296,7 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
         ImGui::DragInt2("Max velocity position", iw3velometerConfig.maxVelocityPos);
         ImGui::DragInt2("Velocity position", iw3velometerConfig.velocityPos);
         ImGui::ColorEdit4("Max velocity color", iw3velometerConfig.maxVelocityColor);
-        ImGui::ColorEdit4("Velocity gain color", iw3velometerConfig.velocityColor);
+        ImGui::ColorEdit4("Velocity gain color", iw3velometerConfig.velocityGainColor);
         ImGui::ColorEdit4("Velocity loss color", iw3velometerConfig.velocityLossColor);
 	ImGui::DragInt("Velocity loss delay", &iw3velometerConfig.loss_velocity);
 
@@ -451,14 +451,14 @@ bool getConfig()
     pv = ini.GetValue("Config", "maxVelocityB", "0.5");
     iw3velometerConfig.maxVelocityColor[2] = std::stof(pv);
 
-    pv = ini.GetValue("Config", "velocityAlpha", "1.0");
-    iw3velometerConfig.velocityColor[3] = std::stof(pv);
-    pv = ini.GetValue("Config", "velocityR", "1.0");
-    iw3velometerConfig.velocityColor[0] = std::stof(pv);
-    pv = ini.GetValue("Config", "velocityG", "1.0");
-    iw3velometerConfig.velocityColor[1] = std::stof(pv);
-    pv = ini.GetValue("Config", "velocityB", "1.0");
-    iw3velometerConfig.velocityColor[2] = std::stof(pv);
+    pv = ini.GetValue("Config", "velocityGainAlpha", "1.0");
+    iw3velometerConfig.velocityGainColor[3] = std::stof(pv);
+    pv = ini.GetValue("Config", "velocityGainR", "1.0");
+    iw3velometerConfig.velocityGainColor[0] = std::stof(pv);
+    pv = ini.GetValue("Config", "velocityGainG", "1.0");
+    iw3velometerConfig.velocityGainColor[1] = std::stof(pv);
+    pv = ini.GetValue("Config", "velocityGainB", "1.0");
+    iw3velometerConfig.velocityGainColor[2] = std::stof(pv);
 	
     pv = ini.GetValue("Config", "velocityLossAlpha", "1.0");
     iw3velometerConfig.velocityLossColor[3] = std::stof(pv);

@@ -46,7 +46,7 @@ struct iw3velometerConfig_s {
 
     bool showMaxVelocity = true;
     int fontSize = 60;
-	int loss_velocity = 30;
+    int loss_velocity = 30;
 	
     std::string selectedFont = "Arial";
 
@@ -151,7 +151,7 @@ bool setConfig()
     ini.SetValue("Config", "guiKey", str);
 
     ini.SetValue("Config", "resetOnDeath", iw3velometerConfig.resetOnDeath ? "True" : "False");
-	ini.SetValue("Config", "velocityLossCheck", iw3velometerConfig.velocityLossCheck ? "True" : "False");
+    ini.SetValue("Config", "velocityLossCheck", iw3velometerConfig.velocityLossCheck ? "True" : "False");
 
     ini.SaveFile(INIPath.c_str());
 
@@ -170,7 +170,7 @@ LRESULT __stdcall MessageHandler(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lPar
         *keyConfig = wParam;
         keyConfig = nullptr;
     }
-	
+
     if (showGui && ImGui_ImplWin32_WndProcHandler(hWnd, Msg, wParam, lParam))
         return true;
 
@@ -228,16 +228,16 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
 
     if (vel > maxvel)
         maxvel = vel;
-	
+
     vel_iteration++;
     if (vel > prev_vel)
     {
-		accel = true;
+	accel = true;
         prev_vel = vel;
     }
     else if (vel_iteration >= iw3velometerConfig.loss_velocity)
     {
-		accel = false;
+	accel = false;
         prev_vel = vel;
         vel_iteration = 0;
     }
@@ -252,13 +252,13 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
     str << vel;
 
     if (showHud && (accel ||(!accel && !iw3velometerConfig.velocityLossCheck)))
-        font->DrawText(NULL, str.str().c_str(), -1, &veloRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB((int)(255 * iw3velometerConfig.velocityColor[3]), (int)(255 * iw3velometerConfig.velocityColor[0]), (int)(255 * iw3velometerConfig.velocityColor[1]), (int)(255 * iw3velometerConfig.velocityColor[2])));
-	else if (showHud && !accel && iw3velometerConfig.velocityLossCheck)
-		font->DrawText(NULL, str.str().c_str(), -1, &veloRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB((int)(255 * iw3velometerConfig.velocityLossColor[3]), (int)(255 * iw3velometerConfig.velocityLossColor[0]), (int)(255 * iw3velometerConfig.velocityLossColor[1]), (int)(255 * iw3velometerConfig.velocityLossColor[2])));
+	font->DrawText(NULL, str.str().c_str(), -1, &veloRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB((int)(255 * iw3velometerConfig.velocityColor[3]), (int)(255 * iw3velometerConfig.velocityColor[0]), (int)(255 * iw3velometerConfig.velocityColor[1]), (int)(255 * iw3velometerConfig.velocityColor[2])));
+    else if (showHud && !accel && iw3velometerConfig.velocityLossCheck)
+	font->DrawText(NULL, str.str().c_str(), -1, &veloRectangle, DT_NOCLIP | DT_CENTER | DT_BOTTOM, D3DCOLOR_ARGB((int)(255 * iw3velometerConfig.velocityLossColor[3]), (int)(255 * iw3velometerConfig.velocityLossColor[0]), (int)(255 * iw3velometerConfig.velocityLossColor[1]), (int)(255 * iw3velometerConfig.velocityLossColor[2])));
 
     if (GetAsyncKeyState(iw3velometerConfig.resetKey) || (iw3velometerConfig.resetOnDeath && isAlive != *isAliveRead))
     {
-        maxvel = 0;
+	maxvel = 0;
         isAlive = *isAliveRead;
     }
 
@@ -298,7 +298,7 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
         ImGui::ColorEdit4("Max velocity color", iw3velometerConfig.maxVelocityColor);
         ImGui::ColorEdit4("Velocity gain color", iw3velometerConfig.velocityColor);
         ImGui::ColorEdit4("Velocity loss color", iw3velometerConfig.velocityLossColor);
-		ImGui::DragInt("Velocity loss delay", &iw3velometerConfig.loss_velocity);
+	ImGui::DragInt("Velocity loss delay", &iw3velometerConfig.loss_velocity);
 
         char buffer[20];
 
@@ -337,10 +337,11 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
         ImGui::Text("Toggle gui key");
 
         ImGui::Checkbox("Reset on death", &iw3velometerConfig.resetOnDeath);
-		ImGui::Checkbox("Show velocity loss", &iw3velometerConfig.velocityLossCheck);
+	ImGui::Checkbox("Show velocity loss", &iw3velometerConfig.velocityLossCheck);
         
-		ImGui::NewLine();
-		ImGui::NewLine();
+	ImGui::NewLine();
+	ImGui::NewLine();
+	    
         if (ImGui::Button("Save configuration", ImVec2(150, 20)))
             setConfig();
 

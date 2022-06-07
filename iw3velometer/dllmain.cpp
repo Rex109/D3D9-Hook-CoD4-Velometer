@@ -291,14 +291,14 @@ HRESULT __stdcall hookedEndScene(IDirect3DDevice9* pDevice) {
         ImGui::SetNextWindowSize(ImVec2(500, 500), ImGuiCond_FirstUseEver);
         ImGui::Begin("IW3Velometer", &showGui);
         ImGui::Checkbox("Show max velocity", &iw3velometerConfig.showMaxVelocity);
-        ImGui::DragInt("Font size", &iw3velometerConfig.fontSize);
+        ImGui::DragInt("Font size", &iw3velometerConfig.fontSize,1.0f,1,1000);
         ImGui::InputText("Font", &iw3velometerConfig.selectedFont);
         ImGui::DragInt2("Max velocity position", iw3velometerConfig.maxVelocityPos);
         ImGui::DragInt2("Velocity position", iw3velometerConfig.velocityPos);
         ImGui::ColorEdit4("Max velocity color", iw3velometerConfig.maxVelocityColor);
         ImGui::ColorEdit4("Velocity gain color", iw3velometerConfig.velocityGainColor);
         ImGui::ColorEdit4("Velocity loss color", iw3velometerConfig.velocityLossColor);
-	ImGui::DragInt("Velocity loss delay", &iw3velometerConfig.loss_velocity);
+	ImGui::DragInt("Velocity loss delay", &iw3velometerConfig.loss_velocity,1.0f,1,1000);
 
         char buffer[20];
 
